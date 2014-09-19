@@ -2,11 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 /**
- * This library is a personal port of RouteBoxer.java
+ * This library is a personal port of RouteBoxer
  * https://code.google.com/p/routeboxer-java/
+ * http://google-maps-utility-library-v3.googlecode.com/svn/trunk/routeboxer/src/RouteBoxer.js
  * 
  * @author rustyj4ck 
  * @link https://github.com/rustyJ4ck/RouteBoxer
@@ -15,6 +15,7 @@ using System.Threading.Tasks;
 namespace InforkomApp.RouteBoxer
 {
     using RouteBoxerResult = List<RouteBoxer.LatLngBounds>;
+    using RouteBoxerInput = List<RouteBoxer.LatLng>;
 
     public class RouteBoxer
     {
@@ -28,8 +29,7 @@ namespace InforkomApp.RouteBoxer
 
             public void trace(params object[] arguments)
             {
-                string format = arguments[0].ToString();
-
+                string format = "[RouteBoxer] " + arguments[0].ToString();
 
                 if (arguments.Length > 1)
                 {
@@ -91,7 +91,7 @@ namespace InforkomApp.RouteBoxer
             }
 
 
-             /**
+            /**
              * A ‘rhumb line’ (or loxodrome) is a path of constant bearing, which crosses all meridians at the same angle.
              * see http://www.movable-type.co.uk/scripts/latlong.html
              * @param brng
@@ -186,6 +186,11 @@ namespace InforkomApp.RouteBoxer
                 this.northeast = northeast;
             }
 
+            public LatLng SouthWest
+            {
+                get { return southwest; }
+            }
+
             public LatLng GetSouthWest()
             {
                 return southwest;
@@ -194,6 +199,11 @@ namespace InforkomApp.RouteBoxer
             public void SetSouthWest(LatLng southwest)
             {
                 this.southwest = southwest;
+            }
+
+            public LatLng NorthEast
+            {
+                get { return northeast; }
             }
 
             public LatLng GetNorthEast()
@@ -206,7 +216,6 @@ namespace InforkomApp.RouteBoxer
                 this.northeast = northeast;
             }
 
-            //@Override
             public override bool Equals(Object o)
             {
                 if (this == o) return true;
@@ -267,7 +276,6 @@ namespace InforkomApp.RouteBoxer
                 return new LatLng(southwest.Lat + (northeast.Lat - southwest.Lat) / 2, southwest.Lng + (northeast.Lng - southwest.Lng) / 2);
             }
 
-            //@Override
             public override int GetHashCode()
             {
                 int result = southwest != null ? southwest.GetHashCode() : 0;
@@ -293,41 +301,45 @@ namespace InforkomApp.RouteBoxer
 
         }
 
-           /**
+        /**
            * utility method to get a LatLng list from an encoded google polyline 
            * You need to pass to box() method below such a long list of LatLngs in order to have it works well
            * @param encodedPoints
            * @return
             */
-          public static List<LatLng> DecodePath(String encodedPoints){
-              List<LatLng> poly = new List<LatLng>();
-              int index = 0, len = encodedPoints.Length;
-              int lat = 0, lng = 0;
-              while (index < len) {
-                  int b, shift = 0, result = 0;
-                  do {
-                      b = encodedPoints.ElementAt(index++) - 63;
-                      result |= (b & 0x1f) << shift;
-                      shift += 5;
-                  } while (b >= 0x20);
-                  int dlat = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
-                  lat += dlat;
-                  shift = 0;
-                  result = 0;
-                  do {
-                      b = encodedPoints.ElementAt(index++) - 63;
-                      result |= (b & 0x1f) << shift;
-                      shift += 5;
-                  } while (b >= 0x20);
-                  int dlng = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
-                  lng += dlng;
-                  LatLng p = new LatLng((((double) lat / 1E5)),
-                      (((double) lng / 1E5)));
-                  poly.Add(p);
-              }
-              return poly;
+        public static List<LatLng> DecodePath(String encodedPoints)
+        {
+            List<LatLng> poly = new List<LatLng>();
+            int index = 0, len = encodedPoints.Length;
+            int lat = 0, lng = 0;
+            while (index < len)
+            {
+                int b, shift = 0, result = 0;
+                do
+                {
+                    b = encodedPoints.ElementAt(index++) - 63;
+                    result |= (b & 0x1f) << shift;
+                    shift += 5;
+                } while (b >= 0x20);
+                int dlat = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+                lat += dlat;
+                shift = 0;
+                result = 0;
+                do
+                {
+                    b = encodedPoints.ElementAt(index++) - 63;
+                    result |= (b & 0x1f) << shift;
+                    shift += 5;
+                } while (b >= 0x20);
+                int dlng = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+                lng += dlng;
+                LatLng p = new LatLng((((double)lat / 1E5)),
+                    (((double)lng / 1E5)));
+                poly.Add(p);
+            }
+            return poly;
 
-          }
+        }
 
 
 
@@ -342,8 +354,8 @@ namespace InforkomApp.RouteBoxer
          * @return {LatLngBounds[]} An List of boxes that covers the whole
          *           path.
          */
-          public RouteBoxerResult Boxes(List<LatLng> path, double range)
-          {
+        public RouteBoxerResult Boxes(List<LatLng> path, double range)
+        {
             // Two dimensional array representing the cells in the grid overlaid on the path
             this._grid = null;
 
@@ -368,10 +380,10 @@ namespace InforkomApp.RouteBoxer
 
 
             // Build the grid that is overlaid on the route
-            this.buildGrid_(vertices, range);
+            this._BuildGrid(vertices, range);
 
             // Identify the grid cells that the route intersects
-            this.findIntersectingCells_(vertices);
+            this._FindIntersectingCells(vertices);
 
             // Merge adjacent intersected grid cells (and their neighbours) into two sets
             //  of bounds, both of which cover them completely
@@ -383,47 +395,63 @@ namespace InforkomApp.RouteBoxer
                 this._boxesY);
         }
 
-         /**
+        private const float GridFactor = 700;
+
+        /**
          * Generates boxes for a given route and distance
          *
          * @param {LatLng[]} vertices The vertices of the path over which to lay the grid
          * @param {Number} range The spacing of the grid cells.
          */
-        private void buildGrid_(List<LatLng> vertices, double range)
+        private void _BuildGrid(List<LatLng> vertices, double range)
         {
-
             // Create a LatLngBounds object that contains the whole path
             LatLngBounds routeBounds = new LatLngBounds();
-            //logger.trace("vertices[0]"+vertices[0].toString()+" vertices["+(vertices.Count-1)+"] "+vertices.get(vertices.Count-1).toString());
+
+            logger.trace("_BuildGrid range: {0}", range);
+
+            range *= GridFactor;
+
+            logger.trace("vertices[0]" + vertices[0].ToString() + " vertices[" + (vertices.Count - 1) + "] " + vertices.ElementAt(vertices.Count - 1).ToString());
+
             for (int i = 0; i < vertices.Count; i++)
             {
                 routeBounds.Extend(vertices[i]);
             }
-            //logger.trace("routeBounds "+routeBounds.toString());
+
+            logger.trace("routeBounds " + routeBounds.ToString());
+
             // Find the center of the bounding box of the path
             LatLng routeBoundsCenter = routeBounds.GetCenter();
-            //logger.trace("routeBoundsCenter "+routeBoundsCenter.toString());
+
+            logger.trace("routeBoundsCenter " + routeBoundsCenter.ToString());
+
             // Starting from the center define grid lines outwards vertically until they
-            //  extend beyond the edge of the bounding box by more than one cell
+            // extend beyond the edge of the bounding box by more than one cell
             this._latGrid.Add(routeBoundsCenter.Lat);
             LatLng rhumb = routeBoundsCenter.RhumbDestinationPoint(0, range);
-            //logger.trace("rhumb 1 "+rhumb.toString());
+
+            logger.trace("rhumb 1 " + rhumb.ToString());
+
             // Add lines from the center out to the north
             this._latGrid.Add(rhumb.Lat);
             for (int i = 2; this._latGrid[i - 2] < routeBounds.GetNorthEast().Lat; i++)
             {
                 this._latGrid.Add(routeBoundsCenter.RhumbDestinationPoint(0, range * i).Lat);
-
             }
-            //logger.trace("pass1 latGrid size"+latGrid_.Count);
+
+            logger.trace("pass1 latGrid size " + _latGrid.Count);
+
             // Add lines from the center out to the south  
             for (int i1 = 1; this._latGrid[1] > routeBounds.GetSouthWest().Lat; i1++)
             {
                 this._latGrid.Insert(0, routeBoundsCenter.RhumbDestinationPoint(180, range * i1).Lat);
             }
-            //logger.trace("pass2 latGrid size"+latGrid_.Count);
+
+            logger.trace("pass2 latGrid size " + _latGrid.Count);
+
             // Starting from the center define grid lines outwards horizontally until they
-            //  extend beyond the edge of the bounding box by more than one cell  
+            // extend beyond the edge of the bounding box by more than one cell  
             this._lngGrid.Add(routeBoundsCenter.Lng);
 
             // Add lines from the center out to the east
@@ -432,22 +460,26 @@ namespace InforkomApp.RouteBoxer
             {
                 this._lngGrid.Add(routeBoundsCenter.RhumbDestinationPoint(90, range * i2).Lng);
             }
-            //logger.trace("pass1 lngGrid_ size"+lngGrid_.Count);
+
+            logger.trace("pass1 lngGrid_ size " + _latGrid.Count);
+
             // Add lines from the center out to the west
             for (int i3 = 1; this._lngGrid[1] > routeBounds.GetSouthWest().Lng; i3++)
             {
                 this._lngGrid.Insert(0, routeBoundsCenter.RhumbDestinationPoint(270, range * i3).Lng);
             }
-            //logger.trace("pass2 lngGrid_ size"+lngGrid_.Count);
+
+            logger.trace("pass2 lngGrid_ size " + _latGrid.Count);
 
             // Create a two dimensional array representing this grid
             // this.grid_ = new int[this.lngGrid_.Count, this.latGrid_.Count];
             this._grid = new int[this._lngGrid.Count][]; // this.latGrid_.Count];
 
-            for (var i = 0; i < this._lngGrid.Count; i++) 
+            for (var i = 0; i < this._lngGrid.Count; i++)
             {
-                 this._grid[i] = new int[this._latGrid.Count];
+                this._grid[i] = new int[this._latGrid.Count];
             }
+
         }
 
         /**
@@ -455,7 +487,7 @@ namespace InforkomApp.RouteBoxer
          *
          * @param {LatLng[]} vertices The vertices of the path
          */
-        private void findIntersectingCells_(List<LatLng> vertices)
+        private void _FindIntersectingCells(List<LatLng> vertices)
         {
             // Find the cell where the path begins
             int[] hintXY = this.getCellCoords_(vertices[0]);
@@ -466,10 +498,9 @@ namespace InforkomApp.RouteBoxer
             // Work through each vertex on the path identifying which grid cell it is in
             for (int i = 1; i < vertices.Count; i++)
             {
-                //logger.trace("findIntersectingCells_ i "+i);
                 // Use the known cell of the previous vertex to help find the cell of this vertex
                 int[] gridXY = this.getGridCoordsFromHint_(vertices[i], vertices.ElementAt(i - 1), hintXY);
-                //logger.trace("findIntersectingCells_ gridXY "+gridXY[0]+" "+gridXY[1]);
+
                 if (gridXY[0] == hintXY[0] && gridXY[1] == hintXY[1])
                 {
                     // This vertex is in the same cell as the previous vertex
@@ -478,7 +509,7 @@ namespace InforkomApp.RouteBoxer
 
                 }
                 else if ((Math.Abs(hintXY[0] - gridXY[0]) == 1 && hintXY[1] == gridXY[1]) ||
-                  (hintXY[0] == gridXY[0] && Math.Abs(hintXY[1] - gridXY[1]) == 1))
+                    (hintXY[0] == gridXY[0] && Math.Abs(hintXY[1] - gridXY[1]) == 1))
                 {
                     // This vertex is in a cell that shares an edge with the previous cell
                     // Mark this cell and it's neighbours for inclusion in the boxes
@@ -505,10 +536,11 @@ namespace InforkomApp.RouteBoxer
          * @param {LatLng[]} latlng The latlng of the vertex
          * @return {Number[][]} The cell coordinates of this vertex in the grid
          */
-        private int[] getCellCoords_(LatLng latlng) {
-            int x,y;
-            for (x = 0; this._lngGrid[x] < latlng.Lng; x++) {}
-            for (y = 0; this._latGrid[y] < latlng.Lat; y++) {}
+        private int[] getCellCoords_(LatLng latlng)
+        {
+            int x, y;
+            for (x = 0; this._lngGrid[x] < latlng.Lng; x++) { }
+            for (y = 0; this._latGrid[y] < latlng.Lat; y++) { }
             int[] result = { x - 1, y - 1 };
             return result;
         }
@@ -665,20 +697,26 @@ namespace InforkomApp.RouteBoxer
          * @param {Number} endx The last column to include
          * @param {Number} y The row of the cells to include
          */
-        private void fillInGridSquares_(int startx, int endx, int y) {
-            //logger.trace("fillInGridSquares_ startx"+startx+" endx "+endx+" y "+y);
+        private void fillInGridSquares_(int startx, int endx, int y)
+        {
+            logger.trace("fillInGridSquares_ startx" + startx + " endx " + endx + " y " + y);
             int x;
-            if (startx < endx) {
-                for (x = startx; x <= endx; x++) {
+            if (startx < endx)
+            {
+                for (x = startx; x <= endx; x++)
+                {
                     int[] cell = { x, y };
                     this._MarkCell(cell);
                 }
-            } else {
-                for (x = startx; x >= endx; x--) {
-                    int [] cell = {x,y};
+            }
+            else
+            {
+                for (x = startx; x >= endx; x--)
+                {
+                    int[] cell = { x, y };
                     this._MarkCell(cell);
-                }            
-            }      
+                }
+            }
         }
 
         /**
@@ -692,7 +730,7 @@ namespace InforkomApp.RouteBoxer
             int y = cell[1];
             try
             {
-                //logger.trace("markCell x"+x+" y "+y);
+                logger.trace("markCell x" + x + " y " + y);
                 this._grid[x - 1][y - 1] = 1;
                 this._grid[x][y - 1] = 1;
                 this._grid[x + 1][y - 1] = 1;
@@ -722,7 +760,8 @@ namespace InforkomApp.RouteBoxer
          *   width that are adjacent vertically.
          *     
          */
-        private void _MergeIntersectingCells() {
+        private void _MergeIntersectingCells()
+        {
             int x, y;
             LatLngBounds box;
 
@@ -730,22 +769,30 @@ namespace InforkomApp.RouteBoxer
             LatLngBounds currentBox = null;
 
             // Traverse the grid a row at a time
-            for (y = 0; y < this._grid[0].Length; y++) {
-                for (x = 0; x < this._grid.Length; x++) {
+            for (y = 0; y < this._grid[0].Length; y++)
+            {
+                for (x = 0; x < this._grid.Length; x++)
+                {
 
-                    if (this._grid[x][y]==1) {
+                    if (this._grid[x][y] == 1)
+                    {
                         // This cell is marked for inclusion. If the previous cell in this
                         //   row was also marked for inclusion, merge this cell into it's box.
                         // Otherwise start a new box.
-                        int[] cell = {x, y};
+                        int[] cell = { x, y };
                         box = this._GetCellBounds(cell);
-                        if (currentBox!=null) {
+                        if (currentBox != null)
+                        {
                             currentBox.Extend(box.GetNorthEast());
-                        } else {
+                        }
+                        else
+                        {
                             currentBox = box;
                         }
 
-                    } else {
+                    }
+                    else
+                    {
                         // This cell is not marked for inclusion. If the previous cell was
                         //  marked for inclusion, merge it's box with a box that spans the same
                         //  columns from the row below if possible.
@@ -760,23 +807,31 @@ namespace InforkomApp.RouteBoxer
             }
 
             // Traverse the grid a column at a time
-            for (x = 0; x < this._grid.Length; x++) {
-                for (y = 0; y < this._grid[0].Length; y++) {
-                    if (this._grid[x][y]==1) {
+            for (x = 0; x < this._grid.Length; x++)
+            {
+                for (y = 0; y < this._grid[0].Length; y++)
+                {
+                    if (this._grid[x][y] == 1)
+                    {
 
                         // This cell is marked for inclusion. If the previous cell in this
                         //   column was also marked for inclusion, merge this cell into it's box.
                         // Otherwise start a new box.
                         int[] cell = { x, y };
-                        if (currentBox!=null) {
+                        if (currentBox != null)
+                        {
 
                             box = this._GetCellBounds(cell);
                             currentBox.Extend(box.GetNorthEast());
-                        } else {
+                        }
+                        else
+                        {
                             currentBox = this._GetCellBounds(cell);
                         }
 
-                    } else {
+                    }
+                    else
+                    {
                         // This cell is not marked for inclusion. If the previous cell was
                         //  marked for inclusion, merge it's box with a box that spans the same
                         //  rows from the column to the left if possible.
